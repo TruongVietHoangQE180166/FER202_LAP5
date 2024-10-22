@@ -6,7 +6,6 @@ import StudentManagement from './Component/ManageStudent';
 function App() {
   return (
     <div>
-      
       <StudentManagement/>
     </div>
   );

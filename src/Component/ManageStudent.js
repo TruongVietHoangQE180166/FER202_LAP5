@@ -11,7 +11,7 @@ function StudentManagement() {
   ]);
   //state for add
   const [name, setName] = useState('');
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState('');// note for ract
   const [birth, setBirth] = useState('');
   const [CCCD, setCCCD] = useState('');
   //state for select all
@@ -137,7 +137,6 @@ function StudentManagement() {
   return (
     <div className="container mt-5">
       <h3>StudentManagement</h3>
-      
       <Button variant="dark" onClick={handleOpenAddModal} className="mb-3">
         Add Student
       </Button>{' '}
@@ -376,3 +375,5 @@ function StudentManagement() {
 }
 
 export default StudentManagement;
+
+
