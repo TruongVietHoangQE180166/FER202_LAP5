@@ -1,4 +1,225 @@
 import React, { useState, useEffect } from 'react';
+import { Button, Form, Table, Badge, Row, Col } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+const API_URL = 'https://student-api-nestjs.onrender.com/Students';
+
+function StudentManagement() {
+  const [students, setStudents] = useState([]);
+  const [name, setName] = useState('');
+  const [code, setCode] = useState('');
+  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  async function fetchStudents() {
+    try {
+      const response = await axios.get(API_URL);
+      if (response.data.success) {
+        setStudents(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    }
+  }
+
+  async function handleAddStudent() {
+    if (!name || !code) return alert('Please enter complete information.');
+
+    try {
+      const newStudent = { name, studentCode: code, isActive: true };
+      const response = await axios.post(API_URL, newStudent);
+      if (response.data.success) {
+        setStudents([response.data.data, ...students]);
+        setName('');
+        setCode('');
+      }
+    } catch (error) {
+      console.error('Error adding student:', error);
+    }
+  }
+
+  async function handleDeleteStudent(id) {
+    try {
+      const response = await axios.delete(`${API_URL}/${id}`);
+      if (response.data.success) {
+        setStudents(students.filter(student => student._id !== id));
+        setSelectedStudents(selectedStudents.filter(sId => sId !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting student:', error);
+    }
+  }
+
+  // Update student status in API
+  async function toggleStatus(id) {
+    const student = students.find(student => student._id === id);
+    if (!student) return;
+
+    try {
+      const updatedStudent = { ...student, isActive: !student.isActive };
+      const response = await axios.put(`${API_URL}/${id}`, updatedStudent);
+      if (response.data.success) {
+        setStudents(students.map(s => (s._id === id ? response.data.data : s)));
+      }
+    } catch (error) {
+      console.error('Error updating student status:', error);
+    }
+  }
+
+  function handleSelectStudent(id, isChecked) {
+    if (isChecked) {
+      setSelectedStudents([...selectedStudents, id]);
+    } else {
+      setSelectedStudents(selectedStudents.filter(sId => sId !== id));
+      setSelectAll(false);
+    }
+  }
+
+  function handleSelectAll(isChecked) {
+    setSelectAll(isChecked);
+    if (isChecked) {
+      const allStudentIds = students.map(student => student._id);
+      setSelectedStudents(allStudentIds);
+    } else {
+      setSelectedStudents([]);
+    }
+  }
+
+  // Delete all students via API
+  async function handleClearAll() {
+    try {
+      // Loop through selected students and delete each via API
+      for (const studentId of selectedStudents) {
+        await axios.delete(`${API_URL}/${studentId}`);
+      }
+  
+      // Update the state to remove deleted students
+      setStudents(students.filter(student => !selectedStudents.includes(student._id)));
+      setSelectedStudents([]); // Clear selected students
+      setSelectAll(false); // Uncheck "Select All"
+    } catch (error) {
+      console.error('Error while clearing selected students:', error);
+    }
+  }
+  
+
+  useEffect(() => {
+    setSelectAll(selectedStudents.length === students.length && students.length > 0);
+  }, [selectedStudents, students]);
+
+  return (
+    <div className="container mt-5">
+      <h3>Student Management</h3>
+
+      <Form className="mb-3">
+        <Row>
+          <Col>
+            <Form.Control
+              type="text"
+              placeholder="Student Name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+            />
+          </Col>
+          <Col>
+            <Form.Control
+              type="text"
+              placeholder="Student Code"
+              value={code}
+              onChange={e => setCode(e.target.value)}
+            />
+          </Col>
+          <Col>
+            <Button variant="dark" onClick={handleAddStudent}>
+              Add
+            </Button>
+          </Col>
+        </Row>
+      </Form>
+
+      <Table striped bordered hover>
+        <thead>
+          <tr>
+            <th colSpan={7}>
+              <Row className="align-items-center">
+                <Col xs="auto">
+                  <Form.Check
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={e => handleSelectAll(e.target.checked)}
+                    label={`Selected Students: ${selectedStudents.length}`}
+                  />
+                </Col>
+                <Col xs="auto">
+                  <Button variant="dark" onClick={handleClearAll}>
+                    Clear
+                  </Button>
+                </Col>
+              </Row>
+            </th>
+          </tr>
+          <tr>
+            <th></th>
+            <th>Student Name</th>
+            <th>Student Code</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {students.map(student => (
+            <tr key={student._id}>
+              <td>
+                <Form.Check
+                  type="checkbox"
+                  checked={selectedStudents.includes(student._id)}
+                  onChange={e =>
+                    handleSelectStudent(student._id, e.target.checked)
+                  }
+                />
+              </td>
+              <td>
+                <Link to={`/student/${student._id}`} style={{ color: 'black', fontWeight: '500' }}>
+                  {student.name}
+                </Link>
+              </td>
+              <td>{student.studentCode}</td>
+              <td>
+                <Badge
+                  bg={student.isActive ? 'info' : 'danger'}
+                  onClick={() => toggleStatus(student._id)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {student.isActive ? 'Active' : 'Inactive'}
+                </Badge>
+              </td>
+              <td>
+                <Button variant="danger" onClick={() => handleDeleteStudent(student._id)}>
+                  Delete
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </div>
+  );
+}
+
+export default StudentManagement;
+
+
+
+
+
+/*
+import React, { useState, useEffect } from 'react';
 import { Button, Form, Table, Badge, Row, Col, Modal } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -253,127 +474,4 @@ function StudentManagement() {
     ))}
   </tbody>
 </Table>
-
-
-      {/* Modal for editing student information */}
-      <Modal show={showEditModal} onHide={handleCloseEditModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Student</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group controlId="formName">
-              <Form.Label>Student Name</Form.Label>
-              <Form.Control
-                type="text"
-                value={editStudent?.name || ''}
-                onChange={e =>
-                  setEditStudent({ ...editStudent, name: e.target.value })
-                }
-              />
-            </Form.Group>
-            <Form.Group controlId="formCode">
-              <Form.Label>Student Code</Form.Label>
-              <Form.Control
-                type="text"
-                value={editStudent?.code || ''}
-                onChange={e =>
-                  setEditStudent({ ...editStudent, code: e.target.value })
-                }
-              />
-            </Form.Group>
-            <Form.Group controlId="formBirth">
-              <Form.Label>Birth Date</Form.Label>
-              <Form.Control
-                type="text"
-                value={editStudent?.birth || ''}
-                onChange={e =>
-                  setEditStudent({ ...editStudent, birth: e.target.value })
-                }
-              />
-            </Form.Group>
-            <Form.Group controlId="formCCCD">
-              <Form.Label>CCCD</Form.Label>
-              <Form.Control
-                type="text"
-                value={editStudent?.CCCD || ''}
-                onChange={e =>
-                  setEditStudent({ ...editStudent, CCCD: e.target.value })
-                }
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseEditModal}>
-            Close
-          </Button>
-          <Button variant="dark" onClick={handleUpdateStudent}>
-            Save Changes
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-
-      {/* Modal for add student */}
-      <Modal show={showAddModal} onHide={handleCloseAddModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Add Student</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group controlId="formName">
-              <Form.Label>Student Name</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Student Name"
-                value={name}
-                onChange={e => setName(e.target.value)}
-              />
-            </Form.Group>
-            <Form.Group controlId="formCode">
-              <Form.Label>Student Code</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Student Code"
-                value={code}
-                onChange={e => setCode(e.target.value)}
-              />
-            </Form.Group>
-            <Form.Group controlId="formBirth">
-              <Form.Label>Birth Date</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Student Birth"
-                value={birth}
-                onChange={e => setBirth(e.target.value)}
-              />
-            </Form.Group>
-            <Form.Group controlId="formCCCD">
-              <Form.Label>CCCD</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="CCCD"
-                value={CCCD}
-                onChange={e => setCCCD(e.target.value)}
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseAddModal}>
-            Close
-          </Button>
-          <Button variant="dark" onClick={handleAddStudent}>
-            Add
-          </Button>
-        </Modal.Footer>
-      </Modal>
-      <h3>Total Student: {students.length}</h3>
-    </div>
-  );
-}
-
-export default StudentManagement;
-
-
+ */

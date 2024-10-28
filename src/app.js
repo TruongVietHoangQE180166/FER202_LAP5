@@ -1,13 +1,18 @@
-// src/App.js
 import React from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import '@fortawesome/fontawesome-free/css/all.min.css';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+
+
 import StudentManagement from './Component/ManageStudent';
+import StudentDetail from './Component/Studentdetail';
+
 function App() {
   return (
-    <div>
-      <StudentManagement/>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<StudentManagement />} />
+        <Route path="/student/:id" element={<StudentDetail />} />
+      </Routes>
+    </Router>
   );
 }
 
